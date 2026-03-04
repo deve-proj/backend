@@ -1,10 +1,5 @@
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using System.IdentityModel.Tokens.Jwt;
-using DeveSecurity;
 using Microsoft.AspNetCore.Authorization;
-using Swashbuckle.AspNetCore.Annotations;
 
 [ApiController]
 [Route("/user")]
@@ -75,12 +70,13 @@ public class UserController : ControllerBase
     {
         try
         {
-            Guid userId = (Guid)await _userService.CreateUser(userData);
-
+            var result = await _userService.CreateUser(userData);
+            
             return Ok(new
                 CreateUserResponseDto{
                     Message = "User was successfully created!",
-                    Token = Auth.GenerateJwt(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId})
+                    AccessToken = result!.AccessToken,
+                    RefreshToken = result!.RefreshToken
                 }
             );
         }
@@ -90,6 +86,36 @@ public class UserController : ControllerBase
             return BadRequest(new
             {
                 Message = "Failed to create user: " + e.Message
+            });
+        }
+    }
+
+    /// <summary>
+    ///     Refresh expired access token by refresh token
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns>New access token</returns>
+    [HttpPost]
+    [Route("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RefreshTokenResponseDto), StatusCodes.Status201Created)]
+    public async Task<IActionResult?> RefreshToken([FromBody] RefreshTokenRequestDto data)
+    {
+        try
+        {
+            return Ok(new RefreshTokenResponseDto()
+            {
+                AccessToken = (await _userService.RefreshAccessToken(data))!.AccessToken
+            });
+        }
+
+        catch(Exception e)
+        {
+            return BadRequest(new
+            {
+                
+                Message = "Failed to update token: " + e.Message
+                
             });
         }
     }
