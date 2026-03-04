@@ -1,4 +1,4 @@
 bin/
 Migrations/
-Obj/
+obj/
 generated-client/
