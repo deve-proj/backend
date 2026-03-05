@@ -11,8 +11,18 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    Console.WriteLine($"!!! CONNECTION STRING: {connectionString} !!!");
     
-    options.UseNpgsql(connectionString);
+    try
+    {
+        options.UseNpgsql(connectionString);
+    }
+
+    catch(Exception e)
+    {
+        Console.WriteLine("Error!" + e.Message);
+    }
 });
 
 builder.Services.AddCors(options =>
