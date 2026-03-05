@@ -7,8 +7,8 @@ RUN dotnet publish "Backend.csproj" \
     -c Release \
     -o /app/publish \
     -r linux-musl-x64 \
-    --self-contained true \
-    /p:PublishTrimmed=true
+    --self-contained true
+    #/p:PublishTrimmed=true
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine AS final
 WORKDIR /app

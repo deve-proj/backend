@@ -17,16 +17,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <!-- ВАЖНО: Npgsql для .NET 10 пока нет, ставим совместимую 8.0.x -->
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.4" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
-  </ItemGroup>
-
-  <!-- Инструкция для триммера -->
-  <ItemGroup>
-    <TrimmerRootAssembly Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>
 
 </Project>
