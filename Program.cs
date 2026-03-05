@@ -8,22 +8,22 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// {
+//     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-    Console.WriteLine($"!!! CONNECTION STRING: {connectionString} !!!");
+//     Console.WriteLine($"!!! CONNECTION STRING: {connectionString} !!!");
     
-    try
-    {
-        options.UseNpgsql(connectionString);
-    }
+//     try
+//     {
+//         options.UseNpgsql(connectionString);
+//     }
 
-    catch(Exception e)
-    {
-        Console.WriteLine("Error!" + e.Message);
-    }
-});
+//     catch(Exception e)
+//     {
+//         Console.WriteLine("Error!" + e.Message);
+//     }
+// });
 
 builder.Services.AddCors(options =>
 {
