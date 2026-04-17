@@ -66,7 +66,7 @@ public class UserController : ControllerBase
     [HttpPost]
     [AllowAnonymous]
     [ProducesResponseType(typeof(CreateUserResponseDto), StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequestDto userData)
+    public async Task<IActionResult> CreateUser([FromForm] CreateUserRequestDto userData)
     {
         try
         {

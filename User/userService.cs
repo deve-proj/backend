@@ -23,10 +23,12 @@ public class UserService : IUserService
 {
 
     private readonly IUserRepo _userRepo;
+    public readonly IDeveMinioClient _minioClient;
 
-    public UserService(IUserRepo userRepo)
+    public UserService(IUserRepo userRepo, IDeveMinioClient minioClient)
     {
         _userRepo = userRepo;
+        _minioClient = minioClient;
     }
 
     public async Task<ICreateUser?> CreateUser(CreateUserRequestDto userData)
@@ -36,14 +38,25 @@ public class UserService : IUserService
         {
             Guid userId = Guid.NewGuid();
 
+            string key = "";
+
             string AccessToken = Auth.GenerateAccessToken(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId});
             string RefreshToken = Auth.GenerateRefreshToken(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId});
+
+            if(userData.Avatar != null)
+            {
+                using var stream = userData.Avatar.OpenReadStream();
+                key = $"{userId}/avatar/avatar.png";
+
+                await _minioClient.PutObject(stream, key, userData.Avatar.ContentType, userData.Avatar.Length);
+            }
 
             await _userRepo.CreateUser(new User()
                 {
                     Name = userData.Name,
                     Login = userData.Login,
                     Password = BCrypt.Net.BCrypt.HashPassword(userData.Password),
+                    AvatarUrl = $"http://localhost:9000/users/{key}",
                     UserId = userId,
                     RefreshToken = Auth.HashToken(RefreshToken)
                 }

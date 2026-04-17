@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 public interface IUserRepo
 {
-    Task<User?> GetUser(string login, string password);
+    Task<User?> GetUser(string login, string password); 
     Task CreateUser(User UserData);
     Task<bool> DeleteUser(string login);
     Task<string> GetRefreshTokenHashByUserId(Guid userId);

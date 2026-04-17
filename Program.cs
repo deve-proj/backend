@@ -11,8 +11,6 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-    Console.WriteLine($"!!! CONNECTION STRING: {connectionString} !!!");
     
     try
     {
@@ -78,6 +76,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IDeveMinioClient, DeveMinioClient>();
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
