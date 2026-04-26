@@ -4,9 +4,12 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Prometheus;
 using Microsoft.OpenApi;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddGrpc();
+builder.Services.AddGrpcReflection();
 builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -49,7 +52,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidateAudience = false,
             ValidIssuer = jwtSettings["Issuer"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
         };
     });
 
@@ -79,6 +82,12 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDeveMinioClient, DeveMinioClient>();
 builder.Services.AddEndpointsApiExplorer();
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenLocalhost(5263, o => o.Protocols = HttpProtocols.Http1);
+    options.ListenLocalhost(5264, o => o.Protocols = HttpProtocols.Http2);
+});
+
 var app = builder.Build();
 
 if(app.Environment.IsDevelopment())
@@ -91,9 +100,11 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
+    app.MapGrpcReflectionService();
 }
 
 app.MapControllers();
+app.MapGrpcService<UserGrpcServcice>();
 app.UseCors("AllowReactApp");
 app.MapMetrics();
 app.UseAuthentication();

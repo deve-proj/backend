@@ -1,5 +1,6 @@
 using DeveSecurity;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Configuration.UserSecrets;
 
 public class ICreateUser
 {
@@ -16,6 +17,7 @@ public interface IUserService
     public Task<bool> UpdateUserPassword(string newPassword);
     public Task<bool> DeleteUser(string login);
     public Task<RefreshTokenResponseDto?> RefreshAccessToken(RefreshTokenRequestDto data);
+    public Task<GetUserInfoDto> GetUserInfo(string userId);
 
 }
 
@@ -131,6 +133,28 @@ public class UserService : IUserService
             }
         }
 
+        catch(Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+
+    public async Task<GetUserInfoDto> GetUserInfo(string userId)
+    {
+        try
+        {
+            var result = await _userRepo.GetUser(userId);
+
+            return new GetUserInfoDto
+            {
+                Name = result!.Name,
+                Login = result!.Login,
+                Legend = result!.Legend,
+                Avatar = result!.AvatarUrl,
+                ReputationScore = result!.ReputationScore
+            };
+
+        }
         catch(Exception e)
         {
             throw new Exception(e.Message);

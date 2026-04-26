@@ -27,6 +27,8 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Login).IsUnique().HasDatabaseName("uq_users_login");;
             entity.Property(e => e.Password).HasColumnName("password").IsRequired();
             entity.Property(e => e.AvatarUrl).HasColumnName("avatar_url");
+            entity.Property(e => e.Legend).HasColumnName("legend").IsRequired();
+            entity.Property(e => e.ReputationScore).HasColumnName("reputation_score").IsRequired();
             entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
             entity.Property(e => e.RefreshToken).HasColumnName("refresh_token").IsRequired();
         });

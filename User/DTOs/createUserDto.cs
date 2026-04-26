@@ -4,6 +4,7 @@ public class CreateUserRequestDto
     public string Login { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public IFormFile? Avatar { get; set; }
+    public string? Legend { get; set; }
 }
 
 public class CreateUserResponseDto
