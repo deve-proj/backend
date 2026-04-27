@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Grpc.Core;
+using System.Security.Claims;
 
 [ApiController]
 [Route("/user")]
@@ -19,16 +21,49 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="userData">Login credentials</param>
     /// <returns>User info and JWT</returns>
+    [Authorize]
+    [HttpPost("check_auth")]
+    public async Task<GetUserInfoDto> CheckAuth()
+    {
+        string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value!;
+
+        return await _userService.GetUserInfo(userId);
+    }
+
+    /// <summary>
+    /// Authenticate user and get JWT token
+    /// </summary>
+    /// <param name="userData">Login credentials</param>
+    /// <returns>User info and JWT</returns>
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(LoginUserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<GetUserDto?>> GetUser([FromBody] LoginUserDto userData)
+    public async Task<ActionResult> Login([FromBody] LoginUserDto userData)
     {
-        var result = await _userService.GetUser(userData.login, userData.password);
+        Console.Write(userData.password + " " + userData.login + "\n");
+
+        var result = await _userService.Login(userData.login, userData.password);
 
         if(result != null)
         {
-            return Ok(new GetUserDto(){Name = result.Name});
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Domain = "localhost",
+                Expires = DateTime.UtcNow.AddDays(7)
+            };
+
+            Response.Cookies.Append("accessToken", result.AccessToken, cookieOptions);
+            Response.Cookies.Append("refreshToken", result.RefreshToken, cookieOptions);
+
+            return Ok(new CreateUserResponseDto
+            {
+                AccessToken = result.AccessToken,
+                RefreshToken = result.RefreshToken
+            });
         }
 
         return Unauthorized();

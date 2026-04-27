@@ -9,7 +9,7 @@ public class ICreateUser
 public interface IUserService
 {
     public Task<ICreateUser?> CreateUser(CreateUserRequestDto userData);
-    public Task<User?> GetUser(string login, string password);
+    public Task<ICreateUser?> Login(string login, string password);
     public Task<bool> UpdateUserLogin(string newLogin);
     public Task<bool> UpdateUserName(string newName);
     public Task<bool> UpdateUserPassword(string newPassword);
@@ -72,9 +72,30 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<User?> GetUser(string login, string password)
+    public async Task<ICreateUser?> Login(string login, string password)
     {
-        return await _userRepo.GetUser(login, password);
+        User? user = await _userRepo.GetUser(login, password);
+
+        if(user == null)
+        {
+            return null;
+        }
+        else
+        {
+            if(BCrypt.Net.BCrypt.Verify(password, user.Password))
+            {
+                string AccessToken = Auth.GenerateAccessToken(new GetUserDto{Name = user.Name, Login = user.Login, UserId = user.UserId});
+                string RefreshToken = Auth.GenerateRefreshToken(new GetUserDto{Name = user.Name, Login = user.Login, UserId = user.UserId});
+
+                await _userRepo.UpdateRefreshToken(Auth.HashToken(RefreshToken), user.UserId);
+
+                return new ICreateUser{AccessToken = AccessToken, RefreshToken = RefreshToken};
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 
     public async Task<bool> DeleteUser(string login)
@@ -108,11 +129,7 @@ public class UserService : IUserService
 
             if(Auth.VerifyTokenHashs(data.RefreshToken, originTokenHash))
             {
-
-                string tokenHash = Auth.HashToken(data.RefreshToken);
                 User user = (await _userRepo.GetUserByRefreshToken(originTokenHash))!;
-                
-                Console.WriteLine(user);
 
 
                 string AccessToken = Auth.GenerateAccessToken(new GetUserDto()
@@ -123,7 +140,17 @@ public class UserService : IUserService
                     }
                 );
 
-                return new RefreshTokenResponseDto(){AccessToken = AccessToken};
+                string RefreshToken = Auth.GenerateRefreshToken(new GetUserDto()
+                    {
+                        UserId = userId,
+                        Name = user!.Name,
+                        Login = user!.Login
+                    }
+                );
+
+                await _userRepo.UpdateRefreshToken(Auth.HashToken(RefreshToken), userId);
+
+                return new RefreshTokenResponseDto(){AccessToken = AccessToken, RefreshToken = RefreshToken};
             }
 
             else

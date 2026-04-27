@@ -5,9 +5,10 @@ public interface IUserRepo
 {
     Task<User?> GetUser(string login, string password);
     Task<User?> GetUser(string userId);
-    Task<List<User>?> GetUsers(string[] userId);
+    Task<List<User>?> GetUsers(string[] userIds);
     Task CreateUser(User UserData);
     Task<bool> DeleteUser(string login);
+    Task UpdateRefreshToken(string refreshToken, Guid userId);
     Task<string> GetRefreshTokenHashByUserId(Guid userId);
     Task<User?> GetUserByRefreshToken(string RefreshToken);
     
@@ -29,7 +30,7 @@ public class UserRepo : IUserRepo
 
     public async Task<User?> GetUser(string login, string password)
     {
-        return await _context.Users.Where(e => e.Login == login).Where(e => e.Password == password).FirstOrDefaultAsync();
+        return await _context.Users.Where(e => e.Login == login).FirstOrDefaultAsync();
     }
 
     public async Task<User?> GetUser(string userId)
@@ -83,5 +84,10 @@ public class UserRepo : IUserRepo
         {
             throw new Exception(e.Message);
         }
+    }
+
+    public async Task UpdateRefreshToken(string refreshToken, Guid userId)
+    {
+        await _context.Users.Where(e => e.UserId == userId).ExecuteUpdateAsync(setters => setters.SetProperty(u => u.RefreshToken, refreshToken));
     }
 }
