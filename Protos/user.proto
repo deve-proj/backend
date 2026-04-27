@@ -1,19 +1,27 @@
 syntax = "proto3";
 
 service UserGrpc {
-  rpc GetUser (UserRequest) returns (UserResponse);
+    rpc GetUser (UserRequest) returns (UserResponse);
+    rpc GetUsers (UserListRequest) returns (UserListResponse);
 }
 
 message UserRequest {
-  string id = 1;
+    string id = 1;
+}
+
+message UserListRequest {
+    repeated string ids = 1;
 }
 
 message UserResponse {
-  string id = 1;
-  string name = 2;
-  string email = 3;
-  string legend = 4;
-  string avatar = 5;
-  string login = 6;
-  int32 reputationScore = 7;
+    string name = 2;
+    string email = 3;
+    string legend = 4;
+    string avatar = 5;
+    string login = 6;
+    int32 reputationScore = 7;
+}
+
+message UserListResponse {
+    repeated UserResponse users = 1;
 }

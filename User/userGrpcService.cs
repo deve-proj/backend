@@ -16,12 +16,35 @@ public class UserGrpcServcice : UserGrpc.UserGrpcBase
 
         return new UserResponse
         {
-            Id = request.Id,
             Name = user.Name,
             Legend = user.Legend,
             Avatar = user.Avatar,
             Login = user.Login,
             ReputationScore = user.ReputationScore
         };
+    }
+
+    public override async Task<UserListResponse> GetUsers(UserListRequest request, ServerCallContext context)
+    {
+
+        string[] userIds = request.Ids.ToArray();
+
+        var result = await _userService.GetUsersInfo(userIds);
+
+        UserListResponse response = new UserListResponse();
+        
+        foreach(var user in result)
+        {
+            response.Users.Add(new UserResponse
+            {
+                Name = user.Name,
+                Legend = user.Legend,
+                Avatar = user.Avatar,
+                Login = user.Login,
+                ReputationScore = user.ReputationScore
+            });
+        }
+
+        return response;
     }
 }
