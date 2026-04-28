@@ -7,7 +7,18 @@ namespace DeveSecurity
 {
     partial class Auth
     {
-        public static string GenerateAccessToken(GetUserDto data)
+        private readonly IConfiguration _configuration;
+        private readonly string _secretKey;
+        private readonly string _issuer;
+        public Auth(IConfiguration configuration)
+        {
+            _configuration = configuration;
+
+            _secretKey = _configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("Jwt SecretKey was not provided");
+            _issuer = _configuration["JwtSettings:Issuer"] ?? throw new InvalidOperationException("Jwt Issuer was not provided");
+        }
+
+        public string GenerateAccessToken(GetUserDto data)
         {
             Claim[] claims =
             [
@@ -16,14 +27,13 @@ namespace DeveSecurity
                 new Claim("login", data.Login)
             ];
 
-            string secretKey = "34u584ngwejg-324252001143576845m";
-            var ketBytes = Encoding.UTF8.GetBytes(secretKey);
-            var securityKey = new SymmetricSecurityKey(ketBytes);
+            var keyBytes = Encoding.UTF8.GetBytes(_secretKey);
+            var securityKey = new SymmetricSecurityKey(keyBytes);
             var creds = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var accessToken = new JwtSecurityToken
             (
-                issuer: "DEVE",
+                issuer: _issuer,
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(1),
                 signingCredentials: creds
@@ -32,16 +42,15 @@ namespace DeveSecurity
             return new JwtSecurityTokenHandler().WriteToken(accessToken);
         }
 
-        public static string GenerateRefreshToken(GetUserDto data)
+        public string GenerateRefreshToken(GetUserDto data)
         {
-            string secretKey = "34u584ngwejg-324252001143576845m";
-            var ketBytes = Encoding.UTF8.GetBytes(secretKey);
-            var securityKey = new SymmetricSecurityKey(ketBytes);
+            var keyBytes = Encoding.UTF8.GetBytes(_secretKey);
+            var securityKey = new SymmetricSecurityKey(keyBytes);
             var creds = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var refreshToken = new JwtSecurityToken
             (
-                issuer: "DEVE",
+                issuer: _issuer,
                 claims: [new Claim(JwtRegisteredClaimNames.Sub, data.UserId.ToString())],
                 expires: DateTime.UtcNow.AddMonths(1),
                 signingCredentials: creds
@@ -50,7 +59,7 @@ namespace DeveSecurity
             return new JwtSecurityTokenHandler().WriteToken(refreshToken);
         }
 
-        public static GetUserDto DecodeToken(string token)
+        public GetUserDto DecodeToken(string token)
         {
             var jwtHandler = new JwtSecurityTokenHandler();
             var jwt = jwtHandler.ReadJwtToken(token);
@@ -58,12 +67,12 @@ namespace DeveSecurity
             return new GetUserDto(){UserId = Guid.Parse(jwt.Payload.Sub), Login = jwt.Claims.FirstOrDefault(c => c.Type == "login")?.Value!, Name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value!};
         }
 
-        public static string HashToken(string token)
+        public string HashToken(string token)
         {
             return BCrypt.Net.BCrypt.HashPassword(token);
         }
 
-        public static bool VerifyTokenHashs(string token, string tokenHash)
+        public bool VerifyTokenHashs(string token, string tokenHash)
         {
             return BCrypt.Net.BCrypt.Verify(token, tokenHash);
         }

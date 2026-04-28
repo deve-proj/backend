@@ -3,3 +3,4 @@ Migrations/
 obj/
 generated-client/
 swagger.json
+appsettings.Development.json

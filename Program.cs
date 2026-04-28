@@ -5,6 +5,7 @@ using System.Text;
 using Prometheus;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using DeveSecurity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,6 +81,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDeveMinioClient, DeveMinioClient>();
+builder.Services.AddScoped<Auth>();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -100,6 +102,10 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
+}
+
+using (var scope = app.Services.CreateScope())
+{
     app.MapGrpcReflectionService();
 }
 
