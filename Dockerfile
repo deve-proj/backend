@@ -1,8 +1,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+
+RUN apk add --no-cache \
+    protoc \
+    protobuf-dev \
+    gcompat
+
 WORKDIR /src
-COPY ["Backend.csproj", "."]
+COPY Backend.csproj .
 RUN dotnet restore "Backend.csproj"
 COPY . .
+
 RUN dotnet publish "Backend.csproj" \
     -c Release \
     -o /app/publish \
