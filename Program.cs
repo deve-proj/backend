@@ -75,6 +75,8 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer"
     });
 
+    c.EnableAnnotations();
+
 });
 
 builder.Services.AddAuthorization();
