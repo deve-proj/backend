@@ -7,6 +7,7 @@
     "npmVersion": "1.0.3",
     "withInterfaces": true,
     "useSingleRequestParameter": true,
-    "supportsES6": true
+    "supportsES6": true,
+    "apiNamePrefix": ""
   }
 }
