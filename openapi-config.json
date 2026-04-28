@@ -4,7 +4,7 @@
   "outputDir": "generated-client",
   "additionalProperties": {
     "npmName": "@deve-proj/deve-sdk",
-    "npmVersion": "1.0.0",
+    "npmVersion": "1.0.3",
     "withInterfaces": true,
     "useSingleRequestParameter": true,
     "supportsES6": true
