@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Grpc.Core;
 using System.Security.Claims;
+using Swashbuckle.AspNetCore.Annotations;
 
 [ApiController]
 [Route("/user")]
@@ -22,6 +23,7 @@ public class UserController : ControllerBase
     /// <param name="userData">Login credentials</param>
     /// <returns>User info and JWT</returns>
     [Authorize]
+    [SwaggerOperation(OperationId = "CheckAuth")]
     [HttpPost("check_auth")]
     public async Task<GetUserInfoDto> CheckAuth()
     {
@@ -36,6 +38,7 @@ public class UserController : ControllerBase
     /// <param name="userData">Login credentials</param>
     /// <returns>User info and JWT</returns>
     [HttpPost("login")]
+    [SwaggerOperation(OperationId = "Login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginUserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -75,6 +78,7 @@ public class UserController : ControllerBase
     /// <param name="userData"></param>
     /// <returns>Status of deleting</returns>
     [HttpPost("delete")]
+    [SwaggerOperation(OperationId = "Delete")]
     [ProducesResponseType(typeof(LoginUserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteUser([FromBody] DeleteUserDto userData)
@@ -98,6 +102,7 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="userData">User credentials for creation</param>
     /// <returns>Status of creating and JWT</returns>
+    [SwaggerOperation(OperationId = "Regist")]
     [HttpPost]
     [AllowAnonymous]
     [ProducesResponseType(typeof(CreateUserResponseDto), StatusCodes.Status201Created)]
@@ -130,11 +135,12 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="data"></param>
     /// <returns>New access token</returns>
+    [SwaggerOperation(OperationId = "GetRefreshToken")]
     [HttpPost]
     [Route("refresh")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(RefreshTokenResponseDto), StatusCodes.Status201Created)]
-    public async Task<IActionResult?> RefreshToken([FromBody] RefreshTokenRequestDto data)
+    public async Task<IActionResult?> GetRefreshToken([FromBody] RefreshTokenRequestDto data)
     {
         try
         {
