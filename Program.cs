@@ -81,7 +81,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDeveMinioClient, DeveMinioClient>();
-builder.Services.AddScoped<Auth>();
+builder.Services.AddScoped<IAuth, Auth>();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.WebHost.ConfigureKestrel(options =>

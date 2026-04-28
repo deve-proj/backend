@@ -5,7 +5,16 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace DeveSecurity
 {
-    partial class Auth
+    public interface IAuth
+    {
+        public string GenerateAccessToken(GetUserDto data);
+        public string GenerateRefreshToken(GetUserDto data);
+        public GetUserDto DecodeToken(string token);
+        public string HashToken(string token);
+        public bool VerifyTokenHashs(string token, string tokenHash);
+    }
+
+    partial class Auth : IAuth
     {
         private readonly IConfiguration _configuration;
         private readonly string _secretKey;

@@ -25,11 +25,13 @@ public class UserService : IUserService
 
     private readonly IUserRepo _userRepo;
     public readonly IDeveMinioClient _minioClient;
+    private readonly IAuth _authService;
 
-    public UserService(IUserRepo userRepo, IDeveMinioClient minioClient)
+    public UserService(IUserRepo userRepo, IDeveMinioClient minioClient, IAuth authService)
     {
         _userRepo = userRepo;
         _minioClient = minioClient;
+        _authService = authService;
     }
 
     public async Task<ICreateUser?> CreateUser(CreateUserRequestDto userData)
@@ -41,8 +43,8 @@ public class UserService : IUserService
 
             string key = "";
 
-            string AccessToken = Auth.GenerateAccessToken(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId});
-            string RefreshToken = Auth.GenerateRefreshToken(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId});
+            string AccessToken = _authService.GenerateAccessToken(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId});
+            string RefreshToken = _authService.GenerateRefreshToken(new GetUserDto{Name = userData.Name, Login = userData.Login, UserId = userId});
 
             if(userData.Avatar != null)
             {
@@ -59,7 +61,7 @@ public class UserService : IUserService
                     Password = BCrypt.Net.BCrypt.HashPassword(userData.Password),
                     AvatarUrl = $"http://localhost:9000/users/{key}",
                     UserId = userId,
-                    RefreshToken = Auth.HashToken(RefreshToken)
+                    RefreshToken = _authService.HashToken(RefreshToken)
                 }
             );
 
@@ -84,10 +86,10 @@ public class UserService : IUserService
         {
             if(BCrypt.Net.BCrypt.Verify(password, user.Password))
             {
-                string AccessToken = Auth.GenerateAccessToken(new GetUserDto{Name = user.Name, Login = user.Login, UserId = user.UserId});
-                string RefreshToken = Auth.GenerateRefreshToken(new GetUserDto{Name = user.Name, Login = user.Login, UserId = user.UserId});
+                string AccessToken = _authService.GenerateAccessToken(new GetUserDto{Name = user.Name, Login = user.Login, UserId = user.UserId});
+                string RefreshToken = _authService.GenerateRefreshToken(new GetUserDto{Name = user.Name, Login = user.Login, UserId = user.UserId});
 
-                await _userRepo.UpdateRefreshToken(Auth.HashToken(RefreshToken), user.UserId);
+                await _userRepo.UpdateRefreshToken(_authService.HashToken(RefreshToken), user.UserId);
 
                 return new ICreateUser{AccessToken = AccessToken, RefreshToken = RefreshToken};
             }
@@ -123,16 +125,16 @@ public class UserService : IUserService
         try
         {
 
-            Guid userId = Auth.DecodeToken(data.RefreshToken).UserId;
+            Guid userId = _authService.DecodeToken(data.RefreshToken).UserId;
             
             string originTokenHash = await _userRepo.GetRefreshTokenHashByUserId(userId);
 
-            if(Auth.VerifyTokenHashs(data.RefreshToken, originTokenHash))
+            if(_authService.VerifyTokenHashs(data.RefreshToken, originTokenHash))
             {
                 User user = (await _userRepo.GetUserByRefreshToken(originTokenHash))!;
 
 
-                string AccessToken = Auth.GenerateAccessToken(new GetUserDto()
+                string AccessToken = _authService.GenerateAccessToken(new GetUserDto()
                     {
                         UserId = userId,
                         Name = user!.Name,
@@ -140,7 +142,7 @@ public class UserService : IUserService
                     }
                 );
 
-                string RefreshToken = Auth.GenerateRefreshToken(new GetUserDto()
+                string RefreshToken = _authService.GenerateRefreshToken(new GetUserDto()
                     {
                         UserId = userId,
                         Name = user!.Name,
@@ -148,7 +150,7 @@ public class UserService : IUserService
                     }
                 );
 
-                await _userRepo.UpdateRefreshToken(Auth.HashToken(RefreshToken), userId);
+                await _userRepo.UpdateRefreshToken(_authService.HashToken(RefreshToken), userId);
 
                 return new RefreshTokenResponseDto(){AccessToken = AccessToken, RefreshToken = RefreshToken};
             }
