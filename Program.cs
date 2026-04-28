@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Prometheus;
-using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using DeveSecurity;
 
@@ -56,28 +55,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
         };
     });
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "DEVE Api",
-        Version = "v1",
-        Description = "API for DEVE clients"
-    });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        In = ParameterLocation.Header,
-        Description = "Please enter JWT with Bearer into field",
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-
-    c.EnableAnnotations();
-
-});
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUserRepo, UserRepo>();
