@@ -5,6 +5,12 @@ using System.Text;
 using Prometheus;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using DeveSecurity;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +44,11 @@ builder.Services.AddCors(options =>
         });
 });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+    })
 
     .AddJwtBearer(options =>
     {
@@ -53,6 +63,55 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidIssuer = jwtSettings["Issuer"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
+        };
+    })
+
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.Cookie.Name = "GoogleAuth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+        options.SlidingExpiration = true;
+    })
+
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
+        options.SaveTokens = true;
+
+        options.SignInScheme =  CookieAuthenticationDefaults.AuthenticationScheme;
+
+        options.Events = new OAuthEvents
+        {
+            OnCreatingTicket = async context =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+
+                var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+
+                response.EnsureSuccessStatusCode();
+                
+                var jsonString = await response.Content.ReadAsStringAsync();
+
+                var user = JsonDocument.Parse(jsonString).RootElement;
+
+                var email = user.GetProperty("email").GetString();
+                var name = user.GetProperty("name").GetString();
+                
+                context.Identity!.AddClaim(new Claim("email", email!));
+                context.Identity.AddClaim(new Claim("name", name!));
+                context.Identity.AddClaim(new Claim(ClaimTypes.Email, email!));
+                context.Identity.AddClaim(new Claim(ClaimTypes.Name, name!));
+
+                context.RunClaimActions(user);
+            }
         };
     });
 
@@ -71,23 +130,13 @@ builder.WebHost.ConfigureKestrel(options =>
 
 var app = builder.Build();
 
-if(app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My DEVE_API v1"));
-}
-
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    app.MapGrpcReflectionService();
-}
-
+app.MapGrpcReflectionService();
 app.MapControllers();
 app.MapGrpcService<UserGrpcServcice>();
 app.UseCors("AllowReactApp");

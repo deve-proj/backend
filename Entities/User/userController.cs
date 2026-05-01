@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Grpc.Core;
 using System.Security.Claims;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using DeveSecurity;
 
 [ApiController]
 [Route("/user")]
@@ -11,19 +14,54 @@ public class UserController : ControllerBase
 {
 
     private readonly IUserService _userService;
+    private readonly IAuth _auth;
 
-    public UserController(IUserService userService)
+    public UserController(IUserService userService, IAuth auth)
     {
         _userService = userService;
+        _auth = auth;
     }
 
-    /// <summary>
-    /// Authenticate user and get JWT token
-    /// </summary>
-    /// <param name="userData">Login credentials</param>
-    /// <returns>User info and JWT</returns>
+    [AllowAnonymous]
+    [HttpGet("with-google")]
+    public IActionResult GoogleLogin()
+    {
+        var redirectUrl = Url.Action(nameof(GoogleCallback), "User", null, Request.Scheme);
+        var properties = new AuthenticationProperties{RedirectUri = redirectUrl};
+
+        return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+    }
+
+    [HttpGet("google-reply")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GoogleCallback()
+    {
+        var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+        if(!result.Succeeded)
+        {
+            return BadRequest("ОШибка входа через Google");
+        }
+
+        var email = result.Principal.FindFirst("email")?.Value;
+        var name = result.Principal.FindFirst("name")?.Value;
+
+        // var token = _auth.GenerateAccessToken(new GetUserDto
+        // {
+        //     UserId = Guid.NewGuid(),
+        //     Name = name!,
+        //     Login = email!
+        // });
+
+        await _userService.LoginOrRegist(email!, name!);
+
+        string frontendUrl = "http://localhost:5173";
+
+        return Redirect($"{frontendUrl}");
+    }
+
+    
     [Authorize]
-    [SwaggerOperation(OperationId = "CheckAuth")]
     [HttpPost("check_auth")]
     public async Task<GetUserInfoDto> CheckAuth()
     {
@@ -32,16 +70,8 @@ public class UserController : ControllerBase
         return await _userService.GetUserInfo(userId);
     }
 
-    /// <summary>
-    /// Authenticate user and get JWT token
-    /// </summary>
-    /// <param name="userData">Login credentials</param>
-    /// <returns>User info and JWT</returns>
     [HttpPost("login")]
-    [SwaggerOperation(OperationId = "Login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginUserDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> Login([FromBody] LoginUserDto userData)
     {
         Console.Write(userData.password + " " + userData.login + "\n");
@@ -72,15 +102,7 @@ public class UserController : ControllerBase
         return Unauthorized();
     }
 
-    /// <summary>
-    /// Delete user by login
-    /// </summary>
-    /// <param name="userData"></param>
-    /// <returns>Status of deleting</returns>
     [HttpPost("delete")]
-    [SwaggerOperation(OperationId = "Delete")]
-    [ProducesResponseType(typeof(LoginUserDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteUser([FromBody] DeleteUserDto userData)
     {
         Console.WriteLine(userData);
@@ -97,15 +119,8 @@ public class UserController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Create new user
-    /// </summary>
-    /// <param name="userData">User credentials for creation</param>
-    /// <returns>Status of creating and JWT</returns>
-    [SwaggerOperation(OperationId = "Regist")]
     [HttpPost]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(CreateUserResponseDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateUser([FromForm] CreateUserRequestDto userData)
     {
         try
@@ -130,16 +145,9 @@ public class UserController : ControllerBase
         }
     }
 
-    /// <summary>
-    ///     Refresh expired access token by refresh token
-    /// </summary>
-    /// <param name="data"></param>
-    /// <returns>New access token</returns>
-    [SwaggerOperation(OperationId = "GetRefreshToken")]
     [HttpPost]
     [Route("refresh")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponseDto), StatusCodes.Status201Created)]
     public async Task<IActionResult?> GetRefreshToken([FromBody] RefreshTokenRequestDto data)
     {
         try

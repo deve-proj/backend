@@ -16,6 +16,7 @@ public class UserGrpcServcice : UserGrpc.UserGrpcBase
 
         return new UserResponse
         {
+            Id = user.UserId,
             Name = user.Name,
             Legend = user.Legend,
             Avatar = user.Avatar,
@@ -37,6 +38,7 @@ public class UserGrpcServcice : UserGrpc.UserGrpcBase
         {
             response.Users.Add(new UserResponse
             {
+                Id = user.UserId,
                 Name = user.Name,
                 Legend = user.Legend,
                 Avatar = user.Avatar,

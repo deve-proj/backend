@@ -10,6 +10,7 @@ public interface IUserService
 {
     public Task<ICreateUser?> CreateUser(CreateUserRequestDto userData);
     public Task<ICreateUser?> Login(string login, string password);
+    public Task<ICreateUser?> LoginOrRegist(string name, string email);
     public Task<bool> UpdateUserLogin(string newLogin);
     public Task<bool> UpdateUserName(string newName);
     public Task<bool> UpdateUserPassword(string newPassword);
@@ -32,6 +33,25 @@ public class UserService : IUserService
         _userRepo = userRepo;
         _minioClient = minioClient;
         _authService = authService;
+    }
+
+    public async Task<ICreateUser?> LoginOrRegist(string email, string name)
+    {
+        var result = await _userRepo.GetUserByEmailAndName(email, name);
+
+        if(result != null)
+        {
+            return await Login(result.Login, result.Password);
+        }
+        else
+        {
+            return await CreateUser(new CreateUserRequestDto
+            {
+                Name = name,
+                Email = email,
+
+            });
+        }
     }
 
     public async Task<ICreateUser?> CreateUser(CreateUserRequestDto userData)
@@ -76,7 +96,7 @@ public class UserService : IUserService
 
     public async Task<ICreateUser?> Login(string login, string password)
     {
-        User? user = await _userRepo.GetUser(login, password);
+        User? user = await _userRepo.GetUserByLogin(login);
 
         if(user == null)
         {
@@ -171,15 +191,16 @@ public class UserService : IUserService
     {
         try
         {
-            var result = await _userRepo.GetUser(userId);
+            var user = await _userRepo.GetUserByUserId(userId);
 
             return new GetUserInfoDto
             {
-                Name = result!.Name,
-                Login = result!.Login,
-                Legend = result!.Legend,
-                Avatar = result!.AvatarUrl,
-                ReputationScore = result!.ReputationScore
+                UserId = user!.UserId.ToString(),
+                Name = user!.Name,
+                Login = user!.Login,
+                Legend = user!.Legend,
+                Avatar = user!.AvatarUrl,
+                ReputationScore = user!.ReputationScore
             };
 
         }
@@ -193,7 +214,7 @@ public class UserService : IUserService
     {
         try
         {
-            var result = await _userRepo.GetUsers(userIds);
+            var result = await _userRepo.GetUsersByIds(userIds);
 
             List<GetUserInfoDto> users = [];
 
@@ -201,6 +222,7 @@ public class UserService : IUserService
             {
                 users.Add(new GetUserInfoDto
                 {
+                    UserId = user!.UserId.ToString(),
                     Name = user!.Name,
                     Login = user!.Login,
                     Legend = user!.Legend,

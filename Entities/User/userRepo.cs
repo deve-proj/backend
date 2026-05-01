@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 public interface IUserRepo
 {
-    Task<User?> GetUser(string login, string password);
-    Task<User?> GetUser(string userId);
-    Task<List<User>?> GetUsers(string[] userIds);
+    Task<User?> GetUserByLogin(string login);
+    Task<User?> GetUserByUserId(string userId);
+    Task<User?> GetUserByEmailAndName(string email, string name);
+    Task<List<User>?> GetUsersByIds(string[] userIds);
     Task CreateUser(User UserData);
     Task<bool> DeleteUser(string login);
     Task UpdateRefreshToken(string refreshToken, Guid userId);
@@ -23,24 +24,29 @@ public class UserRepo : IUserRepo
         _context = context;
     }
 
+    public async Task<User?> GetUserByEmailAndName(string email, string name)
+    {
+        return await _context.Users.Where(e => e.Name == name && e.Email == email).FirstOrDefaultAsync();
+    }
+
     public async Task<User?> GetUserByRefreshToken(string RefreshToken)
     {
         return await _context.Users.Where(e => e.RefreshToken == RefreshToken).FirstOrDefaultAsync();
     }
 
-    public async Task<User?> GetUser(string login, string password)
+    public async Task<User?> GetUserByLogin(string login)
     {
         return await _context.Users.Where(e => e.Login == login).FirstOrDefaultAsync();
     }
 
-    public async Task<User?> GetUser(string userId)
+    public async Task<User?> GetUserByUserId(string userId)
     {
         return await _context.Users.Where(e => e.UserId == Guid.Parse(userId)).FirstOrDefaultAsync();
     }
 
-    public async Task<List<User>?> GetUsers(string[] userIds)
+    public async Task<List<User>?> GetUsersByIds(string[] userIds)
     {
-        return await _context.Users.Where(e => userIds.Contains(e.Id.ToString())).ToListAsync();
+        return await _context.Users.Where(e => userIds.Contains(e.UserId.ToString())).ToListAsync();
     }
 
     public async Task CreateUser(User UserData)

@@ -1,5 +1,6 @@
 public class GetUserInfoDto
 {
+    public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Login { get; set; } = string.Empty;
     public string Legend { get; set; } = string.Empty;
